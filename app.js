@@ -276,105 +276,141 @@
   function cleanItemName(name) {
     return name
       .replace(/^\d+\s*[xX]\s*/, "")
-      .replace(/\s{2,}/g, " ")
+      .split(/\s+/)
+      .filter((word) => /[A-Za-z0-9]/.test(word)) // drop stray OCR noise tokens like "~~" or "--"
+      .join(" ")
       .trim();
   }
 
-  // whole-word abbreviations, keyed by the letters-only uppercase form of the word
-  const WORD_ABBREVIATIONS = {
-    LRG: "Large", LG: "Large", SM: "Small", MED: "Medium", REG: "Regular",
-    ORG: "Organic", NAT: "Natural", ASST: "Assorted",
-    GRND: "Ground", GRD: "Ground", BNLS: "Boneless", SKNLS: "Skinless",
-    FRZ: "Frozen", FRZN: "Frozen", FRSH: "Fresh", RTS: "Ready to Serve",
-    WHT: "Wheat", WH: "Whole", SKM: "Skim", SKIM: "Skim", LOFAT: "Low Fat", NF: "Non-Fat",
-    DOZ: "Dozen", CT: "Count", PK: "Pack", PKG: "Package", GAL: "Gallon",
-    QT: "Quart", PT: "Pint", OZ: "Ounce", LB: "Pound", LBS: "Pounds", EA: "Each",
-    MLK: "Milk", BUTR: "Butter", BTR: "Butter", CHZ: "Cheese", CHS: "Cheese",
-    YOG: "Yogurt", YOGRT: "Yogurt", CRM: "Cream", SRCRM: "Sour Cream",
-    BRD: "Bread", BGL: "Bagel", TORT: "Tortilla", MUFN: "Muffin", ENGMUF: "English Muffin",
-    BANA: "Banana", BNANA: "Banana", APPL: "Apple", ORNG: "Orange",
-    TOM: "Tomato", TOMA: "Tomato", POT: "Potato", POTA: "Potato",
-    ONI: "Onion", ONIO: "Onion", LETT: "Lettuce", CUKE: "Cucumber",
-    CARR: "Carrot", AVO: "Avocado", PEP: "Pepper", MUSH: "Mushroom",
-    CHKN: "Chicken", BF: "Beef", TURK: "Turkey", PORK: "Pork", BACN: "Bacon", SAUS: "Sausage",
-    BRST: "Breast", THGH: "Thigh", DRMSTK: "Drumstick",
-    PNUT: "Peanut", PB: "Peanut Butter", CER: "Cereal", PAST: "Pasta",
-    RIC: "Rice", SUG: "Sugar", FLR: "Flour", SLT: "Salt", OIL: "Oil",
-    SAU: "Sauce", SOU: "Soup", STK: "Stock", VEG: "Vegetable", VEGGIE: "Vegetable",
-    WTR: "Water", JUC: "Juice", JCE: "Juice", SODA: "Soda",
-    COF: "Coffee", COFE: "Coffee", TEA: "Tea", BEV: "Beverage",
-    DET: "Detergent", TP: "Toilet Paper", PPR: "Paper", TWL: "Towel",
-    SOAP: "Soap", DISH: "Dish", LNDRY: "Laundry", SHMPO: "Shampoo", TSSU: "Tissue",
-    W: "With", WO: "Without", AND: "And",
-  };
+  // Instead of a hand-maintained abbreviation -> expansion map, this figures shorthand out:
+  // it reduces both a common-grocery-term vocabulary and the OCR'd word to a "skeleton"
+  // (first letter + remaining consonants) and fuzzy-matches them. "SKMMLK" and "skim milk"
+  // reduce to the same skeleton automatically, so unseen abbreviations still resolve as long
+  // as the underlying word is in the vocabulary below.
+  const VOCAB = [
+    "milk", "skim milk", "whole milk", "2% milk", "1% milk", "buttermilk",
+    "heavy cream", "half and half", "butter", "margarine",
+    "sour cream", "cream cheese", "cottage cheese", "cheddar cheese", "mozzarella cheese",
+    "swiss cheese", "shredded cheese", "yogurt", "greek yogurt",
+    "eggs", "large eggs", "egg whites",
+    "bread", "wheat bread", "white bread", "whole wheat bread", "sourdough bread", "rye bread",
+    "bagel", "english muffin", "tortilla", "muffin", "dinner roll", "baguette",
+    "banana", "bananas", "apple", "apples", "orange", "oranges", "grapes",
+    "strawberries", "blueberries", "raspberries", "lemon", "lime", "avocado",
+    "tomato", "tomatoes", "onion", "onions", "garlic", "potato", "potatoes",
+    "sweet potato", "carrot", "carrots", "celery", "cucumber", "lettuce", "spinach",
+    "broccoli", "cauliflower", "bell pepper", "mushroom", "mushrooms", "zucchini", "corn",
+    "chicken breast", "chicken thigh", "chicken wings", "ground chicken", "whole chicken", "chicken",
+    "ground beef", "ground turkey", "beef steak", "pork chop", "bacon", "sausage",
+    "ham", "turkey breast", "turkey", "pork", "beef",
+    "salmon", "shrimp", "tuna", "tilapia",
+    "peanut butter", "jelly", "jam", "honey", "maple syrup",
+    "cereal", "oatmeal", "granola", "white rice", "brown rice", "rice",
+    "pasta", "spaghetti", "macaroni", "flour", "sugar", "brown sugar",
+    "salt", "black pepper", "olive oil", "vegetable oil", "canola oil",
+    "soy sauce", "ketchup", "mustard", "mayonnaise", "salsa", "hot sauce",
+    "barbecue sauce", "pasta sauce", "chicken broth", "beef broth",
+    "black beans", "chickpeas", "canned tomatoes", "peanuts", "almonds", "cashews",
+    "orange juice", "apple juice", "grape juice", "water", "sparkling water",
+    "soda", "ginger ale", "coffee", "ground coffee", "tea", "green tea",
+    "beer", "red wine", "white wine",
+    "ice cream", "frozen pizza", "frozen vegetables", "frozen fruit", "frozen waffles",
+    "potato chips", "tortilla chips", "crackers", "pretzels", "popcorn",
+    "cookies", "granola bar", "candy", "chocolate bar", "trail mix",
+    "toilet paper", "paper towels", "napkins", "facial tissue", "dish soap",
+    "laundry detergent", "fabric softener", "dryer sheets", "trash bags",
+    "aluminum foil", "plastic wrap", "sponges", "shampoo", "conditioner",
+    "body wash", "toothpaste", "toothbrush", "deodorant", "hand soap",
+    "diapers", "baby wipes",
+    // common descriptors, so lone abbreviated adjectives resolve too
+    "large", "small", "medium", "regular", "organic", "natural", "fresh",
+    "frozen", "boneless", "skinless", "ground", "whole", "wheat", "white",
+    "dozen", "pack", "package", "gallon", "quart", "pint", "ounce", "pound",
+  ];
 
-  // fully-squished words with no separators, keyed by letters-only uppercase form
-  const SQUISHED_ABBREVIATIONS = {
-    SKMMLK: "Skim Milk",
-    WHLMLK: "Whole Milk",
-    BTTRMLK: "Buttermilk",
-    "2PCTMLK": "2% Milk",
-    WHTBRD: "Wheat Bread",
-    WHEATBRD: "Wheat Bread",
-    GRBEEF: "Ground Beef",
-    GRNDBF: "Ground Beef",
-    GRNDCHKN: "Ground Chicken",
-    PNTBTR: "Peanut Butter",
-    PNUTBTR: "Peanut Butter",
-    CHKNBRST: "Chicken Breast",
-    ORNGJUC: "Orange Juice",
-    ORNGJCE: "Orange Juice",
-    APPLJCE: "Apple Juice",
-    SRCRM: "Sour Cream",
-    CRMCHZ: "Cream Cheese",
-    OJ: "Orange Juice",
-  };
+  function skeletonOf(str) {
+    const letters = str.toUpperCase().replace(/[^A-Z]/g, "");
+    if (!letters) return "";
+    return letters[0] + letters.slice(1).replace(/[AEIOU]/g, "");
+  }
+
+  function titleCasePhrase(phrase) {
+    return phrase
+      .split(" ")
+      .map((w) => (w ? w.charAt(0).toUpperCase() + w.slice(1) : w))
+      .join(" ");
+  }
+
+  const VOCAB_INDEX = (() => {
+    const seen = new Set();
+    const entries = [];
+    for (const phrase of VOCAB) {
+      const skeleton = skeletonOf(phrase.replace(/\s+/g, ""));
+      if (!skeleton || seen.has(skeleton)) continue; // first (most common) phrase wins ties
+      seen.add(skeleton);
+      entries.push({ skeleton, display: titleCasePhrase(phrase) });
+    }
+    return entries;
+  })();
+
+  function levenshtein(a, b) {
+    const m = a.length;
+    const n = b.length;
+    if (!m) return n;
+    if (!n) return m;
+    const dp = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
+    for (let i = 0; i <= m; i++) dp[i][0] = i;
+    for (let j = 0; j <= n; j++) dp[0][j] = j;
+    for (let i = 1; i <= m; i++) {
+      for (let j = 1; j <= n; j++) {
+        dp[i][j] =
+          a[i - 1] === b[j - 1]
+            ? dp[i - 1][j - 1]
+            : 1 + Math.min(dp[i - 1][j - 1], dp[i - 1][j], dp[i][j - 1]);
+      }
+    }
+    return dp[m][n];
+  }
+
+  function maxFuzzyDistance(len) {
+    if (len <= 3) return 0; // too short to guess safely, require an exact skeleton match
+    if (len <= 5) return 1;
+    if (len <= 8) return 2;
+    return 3;
+  }
+
+  function autoExpandToken(token) {
+    const letters = token.replace(/[^A-Za-z]/g, "").toUpperCase();
+    if (letters.length < 2) return null;
+
+    const sk = skeletonOf(letters);
+    let best = null;
+    let bestDist = Infinity;
+    for (const entry of VOCAB_INDEX) {
+      const dist = entry.skeleton === sk ? 0 : levenshtein(sk, entry.skeleton);
+      if (dist < bestDist) {
+        bestDist = dist;
+        best = entry;
+        if (dist === 0) break;
+      }
+    }
+    if (best && bestDist <= maxFuzzyDistance(sk.length)) return best.display;
+    return null;
+  }
 
   function humanizeItemName(name) {
     const cleaned = name.trim();
     if (!cleaned) return cleaned;
 
-    const noSpaceKey = cleaned.replace(/[^A-Za-z0-9%]/g, "").toUpperCase();
-    if (SQUISHED_ABBREVIATIONS[noSpaceKey]) {
-      return SQUISHED_ABBREVIATIONS[noSpaceKey];
-    }
-
     const parts = cleaned.split(/(\s+)/); // keep whitespace so spacing is preserved
     const expanded = parts.map((part) => {
       if (/^\s+$/.test(part) || part === "") return part;
-      const key = part.replace(/[^A-Za-z0-9%]/g, "").toUpperCase();
-      if (WORD_ABBREVIATIONS[key]) return WORD_ABBREVIATIONS[key];
-      const segmented = segmentSquishedAbbreviation(key);
-      if (segmented) return segmented;
+      const auto = autoExpandToken(part);
+      if (auto) return auto;
       return titleCaseWord(part);
     });
 
     return expanded.join("").replace(/\s{2,}/g, " ").trim();
-  }
-
-  // for OCR runs that merge two abbreviations with no space (e.g. "GRNDCHKN"),
-  // try to fully segment the word into known abbreviation keys before giving up
-  const SEGMENTATION_KEYS = Object.keys(WORD_ABBREVIATIONS)
-    .filter((k) => k.length >= 3)
-    .sort((a, b) => b.length - a.length);
-
-  function segmentSquishedAbbreviation(key) {
-    if (key.length < 6) return null; // too short to plausibly be two squished words
-
-    const n = key.length;
-    const best = new Array(n + 1).fill(null);
-    best[0] = [];
-    for (let i = 1; i <= n; i++) {
-      for (const k of SEGMENTATION_KEYS) {
-        const start = i - k.length;
-        if (start >= 0 && best[start] !== null && key.slice(start, i) === k) {
-          best[i] = [...best[start], k];
-          break;
-        }
-      }
-    }
-    if (!best[n]) return null;
-    return best[n].map((k) => WORD_ABBREVIATIONS[k]).join(" ");
   }
 
   function titleCaseWord(word) {
