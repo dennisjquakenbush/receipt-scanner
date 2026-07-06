@@ -230,7 +230,10 @@
       .map((l) => l.trim())
       .filter((l) => l.length > 0);
 
-    const priceAtEnd = /(-?[$€£¥]?\s?\d{1,4}[.,]\d{2})\s*$/;
+    // trailing [A-Z*]{0,2} tolerates tax-code suffixes many receipts print after the
+    // price (e.g. "3.49 T", "3.49F") — without it, every item line fails to match
+    // while a bare "Total 12.81" line still does, so items silently come up empty.
+    const priceAtEnd = /(-?[$€£¥]?\s?\d{1,4}[.,]\d{2})\s*[A-Z*]{0,2}\s*$/;
     const items = [];
     let total = null;
 
