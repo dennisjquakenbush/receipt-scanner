@@ -256,7 +256,7 @@
       if (!namePart || namePart.length < 2) continue;
       if (/^\d+$/.test(namePart)) continue;
 
-      items.push({ name: cleanItemName(namePart), price });
+      items.push({ name: humanizeItemName(cleanItemName(namePart)), price });
     }
 
     return { items, total };
@@ -278,6 +278,110 @@
       .replace(/^\d+\s*[xX]\s*/, "")
       .replace(/\s{2,}/g, " ")
       .trim();
+  }
+
+  // whole-word abbreviations, keyed by the letters-only uppercase form of the word
+  const WORD_ABBREVIATIONS = {
+    LRG: "Large", LG: "Large", SM: "Small", MED: "Medium", REG: "Regular",
+    ORG: "Organic", NAT: "Natural", ASST: "Assorted",
+    GRND: "Ground", GRD: "Ground", BNLS: "Boneless", SKNLS: "Skinless",
+    FRZ: "Frozen", FRZN: "Frozen", FRSH: "Fresh", RTS: "Ready to Serve",
+    WHT: "Wheat", WH: "Whole", SKM: "Skim", SKIM: "Skim", LOFAT: "Low Fat", NF: "Non-Fat",
+    DOZ: "Dozen", CT: "Count", PK: "Pack", PKG: "Package", GAL: "Gallon",
+    QT: "Quart", PT: "Pint", OZ: "Ounce", LB: "Pound", LBS: "Pounds", EA: "Each",
+    MLK: "Milk", BUTR: "Butter", BTR: "Butter", CHZ: "Cheese", CHS: "Cheese",
+    YOG: "Yogurt", YOGRT: "Yogurt", CRM: "Cream", SRCRM: "Sour Cream",
+    BRD: "Bread", BGL: "Bagel", TORT: "Tortilla", MUFN: "Muffin", ENGMUF: "English Muffin",
+    BANA: "Banana", BNANA: "Banana", APPL: "Apple", ORNG: "Orange",
+    TOM: "Tomato", TOMA: "Tomato", POT: "Potato", POTA: "Potato",
+    ONI: "Onion", ONIO: "Onion", LETT: "Lettuce", CUKE: "Cucumber",
+    CARR: "Carrot", AVO: "Avocado", PEP: "Pepper", MUSH: "Mushroom",
+    CHKN: "Chicken", BF: "Beef", TURK: "Turkey", PORK: "Pork", BACN: "Bacon", SAUS: "Sausage",
+    BRST: "Breast", THGH: "Thigh", DRMSTK: "Drumstick",
+    PNUT: "Peanut", PB: "Peanut Butter", CER: "Cereal", PAST: "Pasta",
+    RIC: "Rice", SUG: "Sugar", FLR: "Flour", SLT: "Salt", OIL: "Oil",
+    SAU: "Sauce", SOU: "Soup", STK: "Stock", VEG: "Vegetable", VEGGIE: "Vegetable",
+    WTR: "Water", JUC: "Juice", JCE: "Juice", SODA: "Soda",
+    COF: "Coffee", COFE: "Coffee", TEA: "Tea", BEV: "Beverage",
+    DET: "Detergent", TP: "Toilet Paper", PPR: "Paper", TWL: "Towel",
+    SOAP: "Soap", DISH: "Dish", LNDRY: "Laundry", SHMPO: "Shampoo", TSSU: "Tissue",
+    W: "With", WO: "Without", AND: "And",
+  };
+
+  // fully-squished words with no separators, keyed by letters-only uppercase form
+  const SQUISHED_ABBREVIATIONS = {
+    SKMMLK: "Skim Milk",
+    WHLMLK: "Whole Milk",
+    BTTRMLK: "Buttermilk",
+    "2PCTMLK": "2% Milk",
+    WHTBRD: "Wheat Bread",
+    WHEATBRD: "Wheat Bread",
+    GRBEEF: "Ground Beef",
+    GRNDBF: "Ground Beef",
+    GRNDCHKN: "Ground Chicken",
+    PNTBTR: "Peanut Butter",
+    PNUTBTR: "Peanut Butter",
+    CHKNBRST: "Chicken Breast",
+    ORNGJUC: "Orange Juice",
+    ORNGJCE: "Orange Juice",
+    APPLJCE: "Apple Juice",
+    SRCRM: "Sour Cream",
+    CRMCHZ: "Cream Cheese",
+    OJ: "Orange Juice",
+  };
+
+  function humanizeItemName(name) {
+    const cleaned = name.trim();
+    if (!cleaned) return cleaned;
+
+    const noSpaceKey = cleaned.replace(/[^A-Za-z0-9%]/g, "").toUpperCase();
+    if (SQUISHED_ABBREVIATIONS[noSpaceKey]) {
+      return SQUISHED_ABBREVIATIONS[noSpaceKey];
+    }
+
+    const parts = cleaned.split(/(\s+)/); // keep whitespace so spacing is preserved
+    const expanded = parts.map((part) => {
+      if (/^\s+$/.test(part) || part === "") return part;
+      const key = part.replace(/[^A-Za-z0-9%]/g, "").toUpperCase();
+      if (WORD_ABBREVIATIONS[key]) return WORD_ABBREVIATIONS[key];
+      const segmented = segmentSquishedAbbreviation(key);
+      if (segmented) return segmented;
+      return titleCaseWord(part);
+    });
+
+    return expanded.join("").replace(/\s{2,}/g, " ").trim();
+  }
+
+  // for OCR runs that merge two abbreviations with no space (e.g. "GRNDCHKN"),
+  // try to fully segment the word into known abbreviation keys before giving up
+  const SEGMENTATION_KEYS = Object.keys(WORD_ABBREVIATIONS)
+    .filter((k) => k.length >= 3)
+    .sort((a, b) => b.length - a.length);
+
+  function segmentSquishedAbbreviation(key) {
+    if (key.length < 6) return null; // too short to plausibly be two squished words
+
+    const n = key.length;
+    const best = new Array(n + 1).fill(null);
+    best[0] = [];
+    for (let i = 1; i <= n; i++) {
+      for (const k of SEGMENTATION_KEYS) {
+        const start = i - k.length;
+        if (start >= 0 && best[start] !== null && key.slice(start, i) === k) {
+          best[i] = [...best[start], k];
+          break;
+        }
+      }
+    }
+    if (!best[n]) return null;
+    return best[n].map((k) => WORD_ABBREVIATIONS[k]).join(" ");
+  }
+
+  function titleCaseWord(word) {
+    // only re-case words that look like shouty OCR output (all letters, len > 1);
+    // leave numbers, percentages, and already mixed-case brand names alone
+    if (!/^[A-Z]{2,}$/.test(word)) return word;
+    return word.charAt(0) + word.slice(1).toLowerCase();
   }
 
   function formatMoney(n) {
