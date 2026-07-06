@@ -326,6 +326,41 @@
     "large", "small", "medium", "regular", "organic", "natural", "fresh",
     "frozen", "boneless", "skinless", "ground", "whole", "wheat", "white",
     "dozen", "pack", "package", "gallon", "quart", "pint", "ounce", "pound",
+    // hardware & home improvement (Lowe's, Home Depot, Ace, etc.)
+    "plywood", "drywall", "joint compound", "spackle", "insulation",
+    "lumber", "two by four", "stud", "plank", "particle board", "osb board", "mdf board",
+    "trim", "baseboard", "crown molding", "molding", "subfloor", "joist", "beam", "rafter",
+    "screw", "screws", "wood screw", "drywall screw", "nail", "nails", "finish nail",
+    "bolt", "bolts", "nut", "washer", "anchor", "hinge", "bracket", "hook",
+    "paint", "primer", "spray paint", "wood stain", "varnish", "polyurethane",
+    "paint brush", "paint roller", "paint tray", "painters tape", "masking tape",
+    "duct tape", "electrical tape", "caulk", "silicone caulk", "adhesive", "wood glue",
+    "epoxy", "sealant", "sandpaper", "steel wool", "wire brush",
+    "extension cord", "power strip", "outlet", "light switch", "wall plate",
+    "light bulb", "led bulb", "flashlight", "battery", "batteries", "smoke detector",
+    "circuit breaker", "wire", "electrical wire", "wire nut", "conduit",
+    "pvc pipe", "copper pipe", "pipe fitting", "elbow fitting", "coupling", "valve",
+    "hose bib", "shutoff valve", "faucet", "showerhead", "toilet", "toilet seat",
+    "sink", "garbage disposal", "water heater", "water filter", "drain snake",
+    "plunger", "garden hose", "sprinkler", "hose nozzle",
+    "drill", "drill bit", "impact driver", "circular saw", "jigsaw", "reciprocating saw",
+    "miter saw", "table saw", "angle grinder", "sander", "orbital sander",
+    "hammer", "rubber mallet", "screwdriver", "screwdriver set", "wrench",
+    "adjustable wrench", "socket set", "ratchet", "pliers", "wire cutter", "utility knife",
+    "level", "tape measure", "chalk line", "stud finder", "safety glasses",
+    "work gloves", "respirator mask", "dust mask", "ear protection", "hard hat",
+    "ladder", "step ladder", "extension ladder", "tool box", "tool bag", "work bench",
+    "shop vac", "air compressor", "generator", "propane tank", "fire extinguisher",
+    "tarp", "plastic sheeting", "drop cloth", "bungee cord", "rope", "chain",
+    "padlock", "door knob", "deadbolt", "door hinge", "weatherstripping", "door sweep",
+    "window screen", "gutter", "downspout", "shingles", "roofing felt", "flashing",
+    "fence post", "fence panel", "gate", "gate latch", "mailbox",
+    "concrete mix", "mortar mix", "grout", "tile", "ceramic tile", "vinyl flooring",
+    "laminate flooring", "hardwood flooring", "carpet", "carpet padding",
+    "mulch", "topsoil", "potting soil", "fertilizer", "grass seed", "sod", "gravel", "sand",
+    "shovel", "rake", "hoe", "wheelbarrow", "pruning shears", "lawn mower",
+    "trimmer", "leaf blower", "chainsaw", "hose reel",
+    "extension pole", "furnace filter", "air filter", "thermostat", "ceiling fan",
   ];
 
   function skeletonOf(str) {
@@ -334,10 +369,16 @@
     return letters[0] + letters.slice(1).replace(/[AEIOU]/g, "");
   }
 
+  const ACRONYMS = new Set(["pvc", "led", "osb", "mdf"]);
+
   function titleCasePhrase(phrase) {
     return phrase
       .split(" ")
-      .map((w) => (w ? w.charAt(0).toUpperCase() + w.slice(1) : w))
+      .map((w) => {
+        if (!w) return w;
+        if (ACRONYMS.has(w.toLowerCase())) return w.toUpperCase();
+        return w.charAt(0).toUpperCase() + w.slice(1);
+      })
       .join(" ");
   }
 
@@ -372,10 +413,11 @@
     return dp[m][n];
   }
 
-  function maxFuzzyDistance(len) {
-    if (len <= 3) return 0; // too short to guess safely, require an exact skeleton match
-    if (len <= 5) return 1;
-    if (len <= 8) return 2;
+  function maxFuzzyDistance(tokenLen, entryLen) {
+    if (tokenLen <= 3) return 0; // too short to guess safely, require an exact skeleton match
+    const basis = Math.max(tokenLen, entryLen);
+    if (basis <= 5) return 1;
+    if (basis <= 8) return 2;
     return 3;
   }
 
@@ -388,14 +430,14 @@
     let bestDist = Infinity;
     for (const entry of VOCAB_INDEX) {
       const dist = entry.skeleton === sk ? 0 : levenshtein(sk, entry.skeleton);
-      if (dist < bestDist) {
+      const allowed = maxFuzzyDistance(sk.length, entry.skeleton.length);
+      if (dist <= allowed && dist < bestDist) {
         bestDist = dist;
         best = entry;
         if (dist === 0) break;
       }
     }
-    if (best && bestDist <= maxFuzzyDistance(sk.length)) return best.display;
-    return null;
+    return best ? best.display : null;
   }
 
   function humanizeItemName(name) {
