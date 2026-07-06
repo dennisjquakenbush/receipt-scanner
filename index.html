@@ -9,28 +9,48 @@
 <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+<div class="glow"></div>
+
 <div class="app">
   <header>
-    <h1>🧾 Receipt Scanner</h1>
-    <p class="subtitle">Take a photo or upload a receipt to extract items and prices.</p>
+    <div class="brand">
+      <span class="brand-icon">🧾</span>
+      <div>
+        <h1>Receipt Scanner</h1>
+        <p class="subtitle">Snap a photo — get an editable list of items and prices.</p>
+      </div>
+    </div>
   </header>
 
   <main>
     <section id="capture-section" class="card">
+      <div id="dropzone" class="dropzone">
+        <div class="dropzone-icon">📸</div>
+        <p class="dropzone-title">Drop a receipt photo here</p>
+        <p class="dropzone-sub">or use a button below</p>
+      </div>
+
       <div class="capture-controls">
         <label class="btn primary" for="camera-input">
-          📷 Take Photo
+          <span class="btn-icon">📷</span> Take Photo
           <input id="camera-input" type="file" accept="image/*" capture="environment" hidden />
         </label>
         <label class="btn secondary" for="file-input">
-          🖼️ Upload Image
+          <span class="btn-icon">🖼️</span> Upload Image
           <input id="file-input" type="file" accept="image/*" hidden />
         </label>
       </div>
 
       <div id="preview-wrap" class="hidden">
-        <img id="preview" alt="Receipt preview" />
-        <button id="scan-btn" class="btn primary full">Scan Receipt</button>
+        <div class="preview-frame">
+          <img id="preview" alt="Receipt preview" />
+        </div>
+        <div class="preview-actions">
+          <button id="scan-btn" class="btn primary full">
+            <span class="btn-icon">✨</span> Scan Receipt
+          </button>
+          <button id="clear-preview-btn" class="btn ghost small">Choose a different photo</button>
+        </div>
       </div>
 
       <div id="progress-wrap" class="hidden">
@@ -41,9 +61,14 @@
 
     <section id="results-section" class="card hidden">
       <div class="results-header">
-        <h2>Items</h2>
+        <div>
+          <h2>Items</h2>
+          <p id="items-count" class="items-count"></p>
+        </div>
         <button id="rescan-btn" class="btn secondary small">Start Over</button>
       </div>
+
+      <div id="mismatch-banner" class="mismatch-banner hidden"></div>
 
       <table id="items-table">
         <thead>
@@ -52,22 +77,28 @@
         <tbody id="items-body"></tbody>
       </table>
 
-      <button id="add-row-btn" class="btn secondary small">+ Add Item</button>
+      <button id="add-row-btn" class="btn ghost small">
+        <span class="btn-icon">＋</span> Add Item
+      </button>
 
       <div class="totals">
-        <div class="totals-row">
-          <span>Items total</span>
-          <span id="computed-total">$0.00</span>
-        </div>
-        <div class="totals-row">
+        <div class="totals-row muted">
           <span>Detected total (from receipt)</span>
           <span id="detected-total">—</span>
+        </div>
+        <div class="totals-row grand">
+          <span>Items total</span>
+          <span id="computed-total">$0.00</span>
         </div>
       </div>
 
       <div class="export-controls">
-        <button id="export-csv-btn" class="btn primary">Export CSV</button>
-        <button id="copy-btn" class="btn secondary">Copy as Text</button>
+        <button id="export-csv-btn" class="btn primary">
+          <span class="btn-icon">⬇</span> Export CSV
+        </button>
+        <button id="copy-btn" class="btn secondary">
+          <span class="btn-icon">⧉</span> Copy as Text
+        </button>
       </div>
 
       <details id="raw-text-details">
@@ -77,15 +108,18 @@
     </section>
 
     <section id="error-section" class="card error hidden">
+      <div class="error-icon">⚠️</div>
       <p id="error-message"></p>
       <button id="error-retry-btn" class="btn secondary small">Try Again</button>
     </section>
   </main>
 
   <footer>
-    <p>Everything runs in your browser — no photos are uploaded anywhere.</p>
+    <p>🔒 Everything runs in your browser — no photos are uploaded anywhere.</p>
   </footer>
 </div>
+
+<div id="toast" class="toast hidden"></div>
 
 <script src="https://unpkg.com/tesseract.js@5.1.1/dist/tesseract.min.js"></script>
 <script src="app.js"></script>
