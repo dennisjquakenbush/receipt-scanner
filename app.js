@@ -278,7 +278,8 @@
 
   function cleanItemName(name) {
     return name
-      .replace(/^\d+\s*[xX]\s*/, "")
+      .replace(/^\d+\s*[xX]\s*/, "") // "2 x Milk" -> "Milk"
+      .replace(/^\d{4,14}\s+(?=\S)/, "") // leading SKU/item/PLU code -> "1234567 Bacon" -> "Bacon"
       .split(/\s+/)
       .filter((word) => /[A-Za-z0-9]/.test(word)) // drop stray OCR noise tokens like "~~" or "--"
       .join(" ")
