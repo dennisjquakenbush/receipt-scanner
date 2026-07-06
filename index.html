@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="description" content="Snap a photo of a receipt and extract line items automatically." />
+<title>Receipt Scanner</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧾</text></svg>" />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>🧾 Receipt Scanner</h1>
+    <p class="subtitle">Take a photo or upload a receipt to extract items and prices.</p>
+  </header>
+
+  <main>
+    <section id="capture-section" class="card">
+      <div class="capture-controls">
+        <label class="btn primary" for="camera-input">
+          📷 Take Photo
+          <input id="camera-input" type="file" accept="image/*" capture="environment" hidden />
+        </label>
+        <label class="btn secondary" for="file-input">
+          🖼️ Upload Image
+          <input id="file-input" type="file" accept="image/*" hidden />
+        </label>
+      </div>
+
+      <div id="preview-wrap" class="hidden">
+        <img id="preview" alt="Receipt preview" />
+        <button id="scan-btn" class="btn primary full">Scan Receipt</button>
+      </div>
+
+      <div id="progress-wrap" class="hidden">
+        <div class="progress-bar"><div id="progress-fill"></div></div>
+        <p id="progress-label">Reading text…</p>
+      </div>
+    </section>
+
+    <section id="results-section" class="card hidden">
+      <div class="results-header">
+        <h2>Items</h2>
+        <button id="rescan-btn" class="btn secondary small">Start Over</button>
+      </div>
+
+      <table id="items-table">
+        <thead>
+          <tr><th>Item</th><th>Price</th><th></th></tr>
+        </thead>
+        <tbody id="items-body"></tbody>
+      </table>
+
+      <button id="add-row-btn" class="btn secondary small">+ Add Item</button>
+
+      <div class="totals">
+        <div class="totals-row">
+          <span>Items total</span>
+          <span id="computed-total">$0.00</span>
+        </div>
+        <div class="totals-row">
+          <span>Detected total (from receipt)</span>
+          <span id="detected-total">—</span>
+        </div>
+      </div>
+
+      <div class="export-controls">
+        <button id="export-csv-btn" class="btn primary">Export CSV</button>
+        <button id="copy-btn" class="btn secondary">Copy as Text</button>
+      </div>
+
+      <details id="raw-text-details">
+        <summary>Raw OCR text (for troubleshooting)</summary>
+        <pre id="raw-text"></pre>
+      </details>
+    </section>
+
+    <section id="error-section" class="card error hidden">
+      <p id="error-message"></p>
+      <button id="error-retry-btn" class="btn secondary small">Try Again</button>
+    </section>
+  </main>
+
+  <footer>
+    <p>Everything runs in your browser — no photos are uploaded anywhere.</p>
+  </footer>
+</div>
+
+<script src="https://unpkg.com/tesseract.js@5.1.1/dist/tesseract.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
