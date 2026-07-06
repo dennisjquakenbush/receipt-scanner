@@ -51,8 +51,9 @@ header {
 }
 
 .brand-icon {
-  font-size: 2.4rem;
-  line-height: 1;
+  width: 40px;
+  height: 40px;
+  color: var(--ink);
 }
 
 header h1 {
@@ -114,8 +115,8 @@ header::after {
   bottom: -11px;
   height: 11px;
   background:
-    linear-gradient(-45deg, var(--paper) 50%, transparent 50%) top / 14px 14px repeat-x,
-    linear-gradient(45deg, var(--paper) 50%, transparent 50%) top / 14px 14px repeat-x;
+    linear-gradient(135deg, var(--paper) 50%, transparent 50%) top / 14px 14px repeat-x,
+    linear-gradient(-135deg, var(--paper) 50%, transparent 50%) top / 14px 14px repeat-x;
 }
 
 .card.error {
@@ -124,7 +125,9 @@ header::after {
 }
 
 .error-icon {
-  font-size: 1.6rem;
+  width: 30px;
+  height: 30px;
+  color: var(--danger);
   margin-bottom: 6px;
 }
 
@@ -148,7 +151,9 @@ header::after {
 }
 
 .dropzone-icon {
-  font-size: 1.6rem;
+  width: 28px;
+  height: 28px;
+  color: var(--ink-soft);
   margin-bottom: 6px;
 }
 
@@ -192,8 +197,9 @@ header::after {
 }
 
 .btn-icon {
-  font-size: 0.95rem;
-  line-height: 1;
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
 }
 
 .btn:active {
@@ -388,14 +394,20 @@ td input.price-input {
 }
 
 .row-delete {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   background: none;
   border: none;
   color: var(--ink-faint);
-  font-size: 0.95rem;
   cursor: pointer;
-  line-height: 1;
   padding: 6px;
   transition: color 0.15s;
+}
+
+.row-delete svg {
+  width: 13px;
+  height: 13px;
 }
 
 .row-delete:hover {
@@ -474,11 +486,21 @@ td input.price-input {
 }
 
 footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   text-align: center;
   color: var(--ink-soft);
   font-size: 0.72rem;
   margin-top: 10px;
   letter-spacing: 0.02em;
+}
+
+.footer-icon {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
 }
 
 .toast {

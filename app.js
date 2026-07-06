@@ -484,7 +484,7 @@
     tr.innerHTML = `
       <td><input type="text" class="name-input" value="${escapeHtml(name)}" placeholder="Item name" /></td>
       <td><input type="text" inputmode="decimal" class="price-input" value="${escapeHtml(price)}" placeholder="0.00" /></td>
-      <td><button class="row-delete" title="Remove item">✕</button></td>
+      <td><button class="row-delete" title="Remove item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg></button></td>
     `;
     itemsBody.appendChild(tr);
 
